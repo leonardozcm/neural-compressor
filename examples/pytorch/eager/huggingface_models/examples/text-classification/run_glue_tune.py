@@ -580,7 +580,7 @@ def main():
         model = onnx.load(onnx_model_path)
         evaluator = Benchmark("./examples/text-classification/bert.yaml")
         evaluator.model = common.Model(model)
-        evalue_mode = "performance" # performance or accuracy
+        evalue_mode = "accuracy" # performance or accuracy
         evaluator(evalue_mode)
 
     return eval_results

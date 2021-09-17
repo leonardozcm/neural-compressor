@@ -45,7 +45,7 @@ python examples/text-classification/run_glue_no_trainer_prune.py --task_name mnl
 ## ONNX:
 batch_size = 8
 accuracy = 0.8627
-throughput = 69.168
+throughput = 64.303
 
 You need to [prepare dataset in advance](https://github.com/intel/neural-compressor/tree/master/examples/onnxrt/language_translation/roberta#prepare-dataset), place it under ./examples/text-classification/MRPC like described in  ./examples/text-classification/bert.yaml
 
