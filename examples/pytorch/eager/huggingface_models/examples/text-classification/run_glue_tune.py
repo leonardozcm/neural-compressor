@@ -17,9 +17,12 @@
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
 import logging
+import multiprocessing
 import os
 import random
+from bigdl.nano.pytorch.plugins.ddp_spawn import start_processes_new
 import torch
+import torch.multiprocessing as mp
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
@@ -609,8 +612,17 @@ def export_onnx_model(args, model, onnx_model_path):
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
+
     main()
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    
+    num_processing = int(os.environ.get("num_multiprocessing", 0))
+    if num_processing > 0:
+        start_processes_new(_mp_fn, nprocs=num_processing)
+    else:
+        main()
+
+    # mp.spawn(_mp_fn, nprocs=nprocs, args=(cpu_procs))
