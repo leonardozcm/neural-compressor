@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+version: 1.0
+
 model:                                               # mandatory. used to specify model specific information.
-  name: bert
+  name: xlm-roberta
   framework: pytorch                                 # mandatory. possible values are tensorflow, mxnet, pytorch, pytorch_ipex, onnxrt_integerops and onnxrt_qlinearops.
 
 quantization:                                        # optional. tuning constraints on model-wise for advance user to reduce tuning space.
-  approach: post_training_dynamic_quant
+  approach: post_training_static_quant
 
 tuning:
   accuracy_criterion:

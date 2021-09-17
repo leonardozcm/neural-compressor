@@ -1,40 +1,33 @@
 ## original check:
-eval_accuracy = 0.8382
-throughput = 32.20
+batch_size = 8
+eval_accuracy = 0.8627
+throughput = 37.713
 
 You need to train the pretrained-model before evaluation,
 ```
-python run_glue.py  --model_name_or_path bert-base-cased   --task_name $TASK_NAME   --do_train  --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
+cd neural-compressor/examples/pytorch/eager/huggingface_models
+
+export TASK_NAME=MRPC
+python examples/text-classification/run_glue_tune.py  --model_name_or_path roberta-base   --task_name $TASK_NAME   --do_train  --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
+
 ```
 Alternately, you could also specify --model_name_or_path to the directory of local .bin model to skip training.
 ```
-python run_glue.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
+python examples/text-classification/run_glue_tune.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
 ```
 
 ## Lpot fine-tune:
-Accuracy = 0.81341
-throughput = 51.19
+batch_size = 8
+Accuracy = 0.89076
+throughput = 40.831
 
 https://github.com/leonardozcm/neural-compressor/tree/master/examples/pytorch/eager/huggingface_models
 
 ```
-export TASK_NAME=MRPC
-
-python run_glue.py \
-  --model_name_or_path bert-base-cased \
-  --task_name $TASK_NAME \
-  --do_train \
-  --do_eval \
-  --max_seq_length 128 \
-  --per_device_train_batch_size 32 \
-  --learning_rate 2e-5 \
-  --num_train_epochs 3 \
-  --output_dir /tmp/$TASK_NAME/
-
-bash run_tuning.sh --topology=bert_base_MRPC --dataset_location=/root/.cache/huggingface/datasets/glue/mrpc/1.0.0/dacbe3125aa31d7f70367a07a8a9e72a5a0bfeb5fc42e75c9db75b96da6053ad --input_model=/tmp/$TASK_NAME/
+bash run_tuning.sh --topology=xlm-roberta-base_MRPC --dataset_location=/root/.cache/huggingface/datasets/glue/mrpc/1.0.0/dacbe3125aa31d7f70367a07a8a9e72a5a0bfeb5fc42e75c9db75b96da6053ad --input_model=/tmp/$TASK_NAME/
 
 
-python run_glue_tune.py --tuned_checkpoint best_model --task_name MRPC --max_seq_length 128 --benchmark --int8 --output_dir /tmp/$TASK_NAME/ --model_name_or_path bert-base-cased
+python examples/text-classification/run_glue_tune.py --tuned_checkpoint saved_results --task_name MRPC --max_seq_length 128 --benchmark --int8 --output_dir /tmp/$TASK_NAME/ --model_name_or_path roberta-base
 ```
 
 
@@ -50,23 +43,22 @@ python examples/text-classification/run_glue_no_trainer_prune.py --task_name mnl
 ```
 
 ## ONNX:
-accuracy = 0.8603
-throughput = 53.237
+batch_size = 8
+accuracy = 0.8627
+throughput = 69.168
 
-refer to https://github.com/intel/neural-compressor/tree/1e295885782c05f8a980d74a88c17311e03cf7aa/examples/onnxrt/language_translation/bert
+You need to [prepare dataset in advance](https://github.com/intel/neural-compressor/tree/master/examples/onnxrt/language_translation/roberta#prepare-dataset), place it under ./examples/text-classification/MRPC like described in  ./examples/text-classification/bert.yaml
+
+refer to https://github.com/intel/neural-compressor/tree/master/examples/onnxrt/language_translation/roberta
 ```
-bash prepare_data.sh --data_dir=./MRPC --task_name=$TASK_NAME
-bash prepare_model.sh --input_dir=/root/.cache/huggingface/datasets/glue/mrpc/1.0.0/dacbe3125aa31d7f70367a07a8a9e72a5a0bfeb5fc42e75c9db75b96da6053ad \
-                      --task_name=$TASK_NAME \
-                      --output_model=./bert.onnx # model path as *.onnx
-
-python run_glue_tune.py  --task_name MRPC --max_seq_length 128  --output_dir /tmp/$TASK_NAME/ --model_name_or_path bert-base-cased
+python examples/text-classification/run_glue_tune.py --model_name_or_path /tmp/MRPC  --task_name MRPC --max_seq_length 128  --output_dir /tmp/$TASK_NAME/ --eval_onnx
 ```
 
 ## bigdl-nano (jemalloc + omp):
-accuracy = 0.8382
-throughput = 59.783
+batch_size = 8
+accuracy = 0.8627
+throughput = 55.658
 ```
-bigdl-nano-init python run_glue.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
+bigdl-nano-init python examples/text-classification/run_glue_tune.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
 ```
 

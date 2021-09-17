@@ -19,6 +19,7 @@
 import logging
 import os
 import random
+import torch
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
@@ -145,6 +146,12 @@ class ModelArguments:
         metadata={
             "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
             "with private models)."
+        },
+    )
+    eval_onnx: bool = field(
+        default=False,
+        metadata={
+            "help": "Evaluate with onnx model."
         },
     )
 
@@ -561,19 +568,44 @@ def main():
                             item = label_list[item]
                             writer.write(f"{index}\t{item}\n")
 
-    if False: # True to turn on onnx evaluation
-        logger.info("***Onnx Evalue***")
+    if model_args.eval_onnx: 
+        logger.info("***Export Onnx model***")
+        onnx_model_path = "./examples/text-classification/roBerta.onnx"
+        export_onnx_model(data_args, model, onnx_model_path)
+
+        logger.info("***Onnx Evaluate***")
         import onnx
         from lpot.experimental import Benchmark, common
 
-        model = onnx.load("bert.onnx")
-        evaluator = Benchmark("bert.yaml")
+        model = onnx.load(onnx_model_path)
+        evaluator = Benchmark("./examples/text-classification/bert.yaml")
         evaluator.model = common.Model(model)
-        evalue_mode = "accuracy" # or performance 
+        evalue_mode = "performance" # performance or accuracy
         evaluator(evalue_mode)
 
     return eval_results
 
+def export_onnx_model(args, model, onnx_model_path):
+    with torch.no_grad():
+        inputs = {'input_ids':      torch.ones(1, args.max_seq_length, dtype=torch.int64),
+                    'attention_mask': torch.ones(1, args.max_seq_length, dtype=torch.int64)}
+        outputs = model(**inputs)
+
+        symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+        torch.onnx.export(model,                            # model being run
+                    (inputs['input_ids'],                
+                    inputs['attention_mask']),              # model input (or a tuple for
+                                                            # multiple inputs)
+                    onnx_model_path,                        # where to save the model (can be a file
+                                                            # or file-like object)
+                    opset_version=11,                       # the ONNX version to export the model
+                    do_constant_folding=True,               # whether to execute constant folding
+                    input_names=['input_ids',               # the model's input names
+                                'input_mask'],
+                    output_names=['output'],                # the model's output names
+                    dynamic_axes={'input_ids': symbolic_names,        # variable length axes
+                                'input_mask' : symbolic_names})
+        print("ONNX Model exported to {0}".format(onnx_model_path))
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
