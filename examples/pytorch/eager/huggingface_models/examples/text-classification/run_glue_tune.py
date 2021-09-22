@@ -20,7 +20,7 @@ import logging
 import multiprocessing
 import os
 import random
-from bigdl.nano.pytorch.plugins.ddp_spawn import start_processes_new
+
 import torch
 import torch.multiprocessing as mp
 import sys
@@ -155,6 +155,12 @@ class ModelArguments:
         default=False,
         metadata={
             "help": "Evaluate with onnx model."
+        },
+    )
+    onnx_quantize: bool = field(
+        default=False,
+        metadata={
+            "help": "Quantize onnx model."
         },
     )
 
@@ -573,18 +579,24 @@ def main():
 
     if model_args.eval_onnx: 
         logger.info("***Export Onnx model***")
-        onnx_model_path = "./examples/text-classification/roBerta.onnx"
+        from transformers.convert_graph_to_onnx import optimize, quantize, convert
+        onnx_model_path = "./examples/text-classification/onnx_quan/roberta.onnx"
+        from pathlib import Path
+        # convert('pt', model, Path(onnx_model_path).absolute(), 11)
         export_onnx_model(data_args, model, onnx_model_path)
+
+        if model_args.onnx_quantize:
+            optimized_output = optimize(Path(onnx_model_path).absolute())
+            onnx_model_path = quantize(optimized_output)
 
         logger.info("***Onnx Evaluate***")
         import onnx
         from lpot.experimental import Benchmark, common
 
-        model = onnx.load(onnx_model_path)
+        model = onnx.load(quantized_output)
         evaluator = Benchmark("./examples/text-classification/bert.yaml")
-        evaluator.model = common.Model(model)
-        evalue_mode = "accuracy" # performance or accuracy
-        evaluator(evalue_mode)
+        evaluator("accuracy")
+        evaluator("performance")
 
     return eval_results
 
@@ -621,6 +633,7 @@ if __name__ == "__main__":
     
     num_processing = int(os.environ.get("num_multiprocessing", 0))
     if num_processing > 0:
+        from bigdl.nano.pytorch.plugins.ddp_spawn import start_processes_new
         start_processes_new(_mp_fn, nprocs=num_processing)
     else:
         main()

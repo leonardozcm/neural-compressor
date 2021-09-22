@@ -16,12 +16,7 @@ Alternately, you could also specify --model_name_or_path to the directory of loc
 python examples/text-classification/run_glue_tune.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
 ```
 
-4 pinned Multiprocessing:
-eval_accuracy = 0.8627
-throughput = 106.188
-```
-num_multiprocessing=4 python examples/text-classification/run_glue_tune.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
-```
+
 
 ## Lpot fine-tune:
 batch_size = 8
@@ -61,10 +56,25 @@ refer to https://github.com/intel/neural-compressor/tree/master/examples/onnxrt/
 python examples/text-classification/run_glue_tune.py --model_name_or_path /tmp/MRPC  --task_name MRPC --max_seq_length 128  --output_dir /tmp/$TASK_NAME/ --eval_onnx
 ```
 
++ quantize and optimize
+```
+python examples/text-classification/run_glue_tune.py --model_name_or_path /tmp/MRPC  --task_name MRPC --max_seq_length 128  --output_dir /tmp/$TASK_NAME/ --eval_onnx --onnx_quantize
+```
+batch_size = 8
+accuracy =0.8725
+throughput = 80.140
+
 ## bigdl-nano (jemalloc + omp):
 batch_size = 8
 accuracy = 0.8627
 throughput = 55.658
 ```
 bigdl-nano-init python examples/text-classification/run_glue_tune.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
+```
+
+4 pinned Multiprocessing:
+eval_accuracy = 0.8627
+throughput = 106.188
+```
+num_multiprocessing=4 python examples/text-classification/run_glue_tune.py  --model_name_or_path /tmp/MRPC   --task_name $TASK_NAME   --do_eval  --max_seq_length 128  --per_device_train_batch_size 32   --learning_rate 2e-5   --output_dir /tmp/$TASK_NAME/ --overwrite_output_dir
 ```
