@@ -593,7 +593,7 @@ def main():
         import onnx
         from lpot.experimental import Benchmark, common
 
-        model = onnx.load(quantized_output)
+        model = onnx.load(onnx_model_path)
         evaluator = Benchmark("./examples/text-classification/bert.yaml")
         evaluator("accuracy")
         evaluator("performance")
