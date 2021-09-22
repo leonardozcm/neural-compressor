@@ -579,13 +579,14 @@ def main():
 
     if model_args.eval_onnx: 
         logger.info("***Export Onnx model***")
-        from transformers.convert_graph_to_onnx import optimize, quantize, convert
+        from transformers.convert_graph_to_onnx import optimize, quantize
         onnx_model_path = "./examples/text-classification/onnx_quan/roberta.onnx"
         from pathlib import Path
         # convert('pt', model, Path(onnx_model_path).absolute(), 11)
         export_onnx_model(data_args, model, onnx_model_path)
 
         if model_args.onnx_quantize:
+            # if is_main_process(training_args.local_rank):
             optimized_output = optimize(Path(onnx_model_path).absolute())
             onnx_model_path = quantize(optimized_output)
 
@@ -593,9 +594,11 @@ def main():
         import onnx
         from lpot.experimental import Benchmark, common
 
+
         model = onnx.load(onnx_model_path)
         evaluator = Benchmark("./examples/text-classification/bert.yaml")
-        evaluator("accuracy")
+        evaluator.model = common.Model(model)
+        # evaluator("accuracy")
         evaluator("performance")
 
     return eval_results

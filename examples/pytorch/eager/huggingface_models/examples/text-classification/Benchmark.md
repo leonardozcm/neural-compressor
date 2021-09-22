@@ -64,6 +64,17 @@ batch_size = 8
 accuracy =0.8725
 throughput = 80.140
 
++ 4 instance and 12 core per instance(need to config in bert.yaml)
+```
+    configs:
+      cores_per_instance: 12
+      num_of_instance: 4
+```
+batch_size = 8
+accuracy = 0.8725
+throughput = 472.605 (214.663 without quanization and optimization)
+
+
 ## bigdl-nano (jemalloc + omp):
 batch_size = 8
 accuracy = 0.8627

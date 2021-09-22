@@ -37,9 +37,9 @@ evaluation:                                          # optional. required if use
   performance:                                       # optional. used to benchmark performance of passing model.
     warmup: 10
     iteration: 100
-    # configs:
-    #   cores_per_instance: 4
-    #   num_of_instance: 7
+    configs:
+      cores_per_instance: 12
+      num_of_instance: 4
     dataloader:
       batch_size: 8
       dataset:
