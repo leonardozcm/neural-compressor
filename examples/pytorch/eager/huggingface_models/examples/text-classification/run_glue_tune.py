@@ -598,8 +598,8 @@ def main():
         model = onnx.load(onnx_model_path)
         evaluator = Benchmark("./examples/text-classification/bert.yaml")
         evaluator.model = common.Model(model)
-        # evaluator("accuracy")
-        evaluator("performance")
+        evaluator("accuracy")
+        # evaluator("performance")
 
     return eval_results
 
