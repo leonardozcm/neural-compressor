@@ -17,8 +17,12 @@
 # You can also adapt this script on your own text classification task. Pointers for this are left as comments.
 
 import logging
+import multiprocessing
 import os
 import random
+
+import torch
+import torch.multiprocessing as mp
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
@@ -145,6 +149,18 @@ class ModelArguments:
         metadata={
             "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
             "with private models)."
+        },
+    )
+    eval_onnx: bool = field(
+        default=False,
+        metadata={
+            "help": "Evaluate with onnx model."
+        },
+    )
+    onnx_quantize: bool = field(
+        default=False,
+        metadata={
+            "help": "Quantize onnx model."
         },
     )
 
@@ -560,13 +576,69 @@ def main():
                         else:
                             item = label_list[item]
                             writer.write(f"{index}\t{item}\n")
+
+    if model_args.eval_onnx: 
+        logger.info("***Export Onnx model***")
+        from transformers.convert_graph_to_onnx import optimize, quantize
+        onnx_model_path = "./examples/text-classification/onnx_quan/roberta.onnx"
+        from pathlib import Path
+        # convert('pt', model, Path(onnx_model_path).absolute(), 11)
+        export_onnx_model(data_args, model, onnx_model_path)
+
+        if model_args.onnx_quantize:
+            # if is_main_process(training_args.local_rank):
+            optimized_output = optimize(Path(onnx_model_path).absolute())
+            onnx_model_path = quantize(optimized_output)
+
+        logger.info("***Onnx Evaluate***")
+        import onnx
+        from lpot.experimental import Benchmark, common
+
+
+        model = onnx.load(onnx_model_path)
+        evaluator = Benchmark("./examples/text-classification/bert.yaml")
+        evaluator.model = common.Model(model)
+        evaluator("accuracy")
+        # evaluator("performance")
+
     return eval_results
 
+def export_onnx_model(args, model, onnx_model_path):
+    with torch.no_grad():
+        inputs = {'input_ids':      torch.ones(1, args.max_seq_length, dtype=torch.int64),
+                    'attention_mask': torch.ones(1, args.max_seq_length, dtype=torch.int64)}
+        outputs = model(**inputs)
+
+        symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
+        torch.onnx.export(model,                            # model being run
+                    (inputs['input_ids'],                
+                    inputs['attention_mask']),              # model input (or a tuple for
+                                                            # multiple inputs)
+                    onnx_model_path,                        # where to save the model (can be a file
+                                                            # or file-like object)
+                    opset_version=11,                       # the ONNX version to export the model
+                    do_constant_folding=True,               # whether to execute constant folding
+                    input_names=['input_ids',               # the model's input names
+                                'input_mask'],
+                    output_names=['output'],                # the model's output names
+                    dynamic_axes={'input_ids': symbolic_names,        # variable length axes
+                                'input_mask' : symbolic_names})
+        print("ONNX Model exported to {0}".format(onnx_model_path))
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
+
     main()
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    
+    num_processing = int(os.environ.get("num_multiprocessing", 0))
+    if num_processing > 0:
+        from bigdl.nano.pytorch.plugins.ddp_spawn import start_processes_new
+        start_processes_new(_mp_fn, nprocs=num_processing)
+    else:
+        main()
+
+    # mp.spawn(_mp_fn, nprocs=nprocs, args=(cpu_procs))
